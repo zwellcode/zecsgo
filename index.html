@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>zecsgo算法</title>
+</head>
+<body>
+    <h2>zecsgo算法</h2>
+
+    <label>秘钥哈希: </label>
+    <input type="text" id="secretHash" style="width: 500px;"><br><br>
+
+    <label>用户种子: </label>
+    <input type="text" id="clientSeed" style="width: 500px;"><br><br>
+
+    <label>回合数: </label>
+    <input type="number" id="roundNum" value="1"><br><br>
+
+    <button onclick="roll()">生成结果</button>
+
+    <h3>结果：</h3>
+    <pre id="output"></pre>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+        function encrypt(inputData, keyHex) {
+            try {
+                let key = CryptoJS.enc.Hex.parse(keyHex);
+                let message = CryptoJS.enc.Utf8.parse(inputData);
+                let hmac = CryptoJS.HmacSHA512(message, key);
+                return hmac.toString(CryptoJS.enc.Hex);
+            } catch (e) {
+                console.error("Encryption error:", e);
+                return "";
+            }
+        }
+
+        function onRoll(secretHash, clientSeed, roundNum) {
+            let seed = clientSeed + "-" + roundNum;
+            let valSha256 = encrypt(seed, secretHash);
+            let subHash = valSha256.substring(0, 7);
+            let number = parseInt(subHash, 16);
+            return (number % 1000000) + 1;
+        }
+
+        function roll() {
+            const secretHash = document.getElementById("secretHash").value.trim();
+            const clientSeed = document.getElementById("clientSeed").value.trim();
+            const roundNum = parseInt(document.getElementById("roundNum").value);
+
+            if (!secretHash || !clientSeed || isNaN(roundNum)) {
+                alert("请确保所有输入都已填写并且 Round 是数字！");
+                return;
+            }
+
+            const result = onRoll(secretHash, clientSeed, roundNum);
+            document.getElementById("output").textContent = `Round ${roundNum}: ${result}`;
+        }
+    </script>
+</body>
+</html>
