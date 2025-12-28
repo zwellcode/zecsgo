@@ -51,26 +51,24 @@
             <van-form @submit="roll">
                 <div class="hzs_test">
                     <van-field v-model="secretHash" name="秘钥哈希" label="秘钥哈希" placeholder="请输入秘钥哈希"
-                        :rules="[{ required: true, message: '请输入秘钥哈希' }]" />
+                        :rules="[{ required: true, }]" />
+                </div>
+                 <div class="hzs_test">
+                    <van-field v-model="secretSalt" name="秘钥盐值" label="秘钥盐值" placeholder="请输入秘钥盐值"
+                        :rules="[{ required: true,}]" />
+                </div>
+                  <div class="hzs_test">
+                    <van-field v-model="publicHash" name="公共哈希" label="公共哈希" placeholder="请输入公共哈希"
+                        :rules="[{ required: true,}]" />
                 </div>
                 <div class="hzs_test">
                     <van-field v-model="clientSeed" name="用户种子" label="用户种子" placeholder="请输入用户种子"
-                        :rules="[{ required: true, message: '请输入用户种子' }]" />
+                        :rules="[{ required: true,  }]" />
                 </div>
                 <div class="hzs_test">
                     <van-field v-model="roundNum" name="回合数" label="回合数" placeholder="请输入回合数"
-                        :rules="[{ required: true, message: '请输入回合数' }]" />
+                        :rules="[{ required: true, }]" />
                 </div>
-                <div class="hzs_test">
-                    <van-field v-model="secretSalt" name="秘钥盐值" label="秘钥盐值" placeholder="请输入秘钥盐值"
-                        :rules="[{ required: true, message: '请输入秘钥盐值' }]" />
-                </div>
-                <div class="hzs_test">
-                    <van-field v-model="publicHash" name="公共哈希" label="公共哈希" placeholder="请输入公共哈希"
-                        :rules="[{ required: true, message: '请输入公共哈希' }]" />
-                </div>
-
-
             </van-form>
 
             <h3>结果：</h3>
@@ -139,7 +137,7 @@
                     if (isNaN(roundNum) || roundNum < 1) {
                         alert("回合数必须是大于0的数字！");
                         return;
-                    }
+                    }   
                     const result = this.onRoll(secretHash, clientSeed, roundNum);
                     document.getElementById("output").textContent = `Round ${roundNum}：${result}`;
                 }
