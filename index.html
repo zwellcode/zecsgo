@@ -1,61 +1,151 @@
 <!DOCTYPE html>
 <html lang="zh">
+
 <head>
     <meta charset="UTF-8">
     <title>zecsgo算法</title>
+    <!-- 1. 重置页面默认样式（解决挤压问题） -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            background-color: #f7f8fa;
+        }
+
+        .hzs_test {
+            /* min-height: 30px;
+            border: 1px red solid; */
+        }
+
+        /* 适配Vant移动端组件，PC端模拟手机宽度 */
+        #app {
+            max-width: 375px;
+            height: 100vh;
+            width: 100vw;
+            /* 手机常用宽度 */
+            overflow: auto;
+            background-color: #f7f8fa;
+            /* 居中 */
+        }
+    </style>
+    <!-- 引入样式文件 -->
+    <link rel="stylesheet" href="https://unpkg.com/vant@2.12/lib/index.css" />
+
+    <!-- 引入 Vue 和 Vant 的 JS 文件 -->
+    <script src="https://unpkg.com/vue@2.6/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/vant@2.12/lib/vant.min.js"></script>
+    <!-- 移动端适配meta（必须） -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 </head>
+
 <body>
-    <h2>zecsgo算法</h2>
+    <div id="app">
+        <!-- 3. 用Vant容器规范布局 -->
+        <header>
+            <h2 style="text-align: center; margin: 10px 0;">zecsgo算法</h2>
+        </header>
+        <main style="padding: 10px;">
+            <van-form @submit="roll">
+                <div class="hzs_test">
+                    <van-field v-model="secretHash" name="秘钥哈希" label="秘钥哈希" placeholder="请输入秘钥哈希"
+                        :rules="[{ required: true, message: '请输入秘钥哈希' }]" />
+                </div>
+                <div class="hzs_test">
+                    <van-field v-model="clientSeed" name="用户种子" label="用户种子" placeholder="请输入用户种子"
+                        :rules="[{ required: true, message: '请输入用户种子' }]" />
+                </div>
+                <div class="hzs_test">
+                    <van-field v-model="roundNum" name="回合数" label="回合数" placeholder="请输入回合数"
+                        :rules="[{ required: true, message: '请输入回合数' }]" />
+                </div>
+                <div class="hzs_test">
+                    <van-field v-model="secretSalt" name="秘钥盐值" label="秘钥盐值" placeholder="请输入秘钥盐值"
+                        :rules="[{ required: true, message: '请输入秘钥盐值' }]" />
+                </div>
+                <div class="hzs_test">
+                    <van-field v-model="publicHash" name="公共哈希" label="公共哈希" placeholder="请输入公共哈希"
+                        :rules="[{ required: true, message: '请输入公共哈希' }]" />
+                </div>
 
-    <label>秘钥哈希: </label>
-    <input type="text" id="secretHash" style="width: 500px;"><br><br>
 
-    <label>用户种子: </label>
-    <input type="text" id="clientSeed" style="width: 500px;"><br><br>
+            </van-form>
 
-    <label>回合数: </label>
-    <input type="number" id="roundNum" value="1"><br><br>
+            <h3>结果：</h3>
+            <pre id="output" style="min-height:200px;padding: 10px; background: #f5f5f5; border-radius: 4px;"></pre>
+        </main>
+        <footer style="padding:0 10px;">
+            <van-button round block type="info" native-type="submit" @click="roll">生成结果</van-button>
+        </footer>
 
-    <button onclick="roll()">生成结果</button>
 
-    <h3>结果：</h3>
-    <pre id="output"></pre>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script>
-        function encrypt(inputData, keyHex) {
-            try {
-                let key = CryptoJS.enc.Hex.parse(keyHex);
-                let message = CryptoJS.enc.Utf8.parse(inputData);
-                let hmac = CryptoJS.HmacSHA512(message, key);
-                return hmac.toString(CryptoJS.enc.Hex);
-            } catch (e) {
-                console.error("Encryption error:", e);
-                return "";
+        Vue.use(vant);
+        new Vue({
+            el: '#app',
+            data () {
+                return {
+                    secretHash: '',
+                    clientSeed: '',
+                    roundNum: 1,
+                    secretSalt: '',
+                    publicHash: '', value: ""
+                };
+            },
+            methods: {
+                isHexString (str) {
+                    return /^[0-9a-fA-F]+$/.test(str) && str.length % 2 === 0;
+                },
+                encrypt (inputData, keyHex) {
+                    try {
+                        let key = CryptoJS.enc.Hex.parse(keyHex);
+                        let message = CryptoJS.enc.Utf8.parse(inputData);
+                        let hmac = CryptoJS.HmacSHA512(message, key);
+                        return hmac.toString(CryptoJS.enc.Hex);
+                    } catch (e) {
+                        console.error("加密失败：", e);
+                        alert(`加密错误：${e.message}\n请检查秘钥哈希是否为合法十六进制！`);
+                        return "";
+                    }
+                },
+                onRoll (secretHash, clientSeed, roundNum) {
+                    let seed = clientSeed + "-" + roundNum;
+                    let valSha256 = this.encrypt(seed, secretHash);
+                    if (!valSha256) return "计算失败（加密返回空）";
+                    let subHash = valSha256.substring(0, 7);
+                    let number = parseInt(subHash, 16);
+                    if (isNaN(number)) return "计算失败（无法解析为数字）";
+                    return (number % 1000000) + 1;
+                },
+                roll () {
+                    const { secretHash, clientSeed, roundNum } = this;
+                    if (!secretHash) {
+                        alert("请填写秘钥哈希！");
+                        return;
+                    }
+                    if (!this.isHexString(secretHash)) {
+                        alert("秘钥哈希必须是合法十六进制字符串（仅含0-9/a-f/A-F，长度为偶数）！");
+                        return;
+                    }
+                    if (!clientSeed) {
+                        alert("请填写用户种子！");
+                        return;
+                    }
+                    if (isNaN(roundNum) || roundNum < 1) {
+                        alert("回合数必须是大于0的数字！");
+                        return;
+                    }
+                    const result = this.onRoll(secretHash, clientSeed, roundNum);
+                    document.getElementById("output").textContent = `Round ${roundNum}：${result}`;
+                }
             }
-        }
-
-        function onRoll(secretHash, clientSeed, roundNum) {
-            let seed = clientSeed + "-" + roundNum;
-            let valSha256 = encrypt(seed, secretHash);
-            let subHash = valSha256.substring(0, 7);
-            let number = parseInt(subHash, 16);
-            return (number % 1000000) + 1;
-        }
-
-        function roll() {
-            const secretHash = document.getElementById("secretHash").value.trim();
-            const clientSeed = document.getElementById("clientSeed").value.trim();
-            const roundNum = parseInt(document.getElementById("roundNum").value);
-
-            if (!secretHash || !clientSeed || isNaN(roundNum)) {
-                alert("请确保所有输入都已填写并且 Round 是数字！");
-                return;
-            }
-
-            const result = onRoll(secretHash, clientSeed, roundNum);
-            document.getElementById("output").textContent = `Round ${roundNum}: ${result}`;
-        }
+        });
     </script>
 </body>
+
 </html>
